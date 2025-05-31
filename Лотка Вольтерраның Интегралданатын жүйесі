@@ -1,0 +1,123 @@
+интегралданатын жүйе
+Ляпунов:
+from scipy.integrate import solve_ivp
+import numpy as np
+# Жүйенің оң жағын беретін функция
+def lotka_volterra(t, x):
+    return x * (A @ x)  # A — берілген матрица
+A = np.array([
+    [0, 1, 0, 0, 0],
+    [-1, 0, 1, 0, 0],
+    [0, -1, 0, 1, 0],
+    [0, 0, -1, 0, 1],
+    [0, 0, 0, -1, 0]
+])
+# Ляпунов экспонентін жуық есептейтін функция
+def lyapunov_exponent(system, x0, dt=0.01, T=50, d0=1e-8):
+    n = len(x0)
+    t_vals = np.arange(0, T, dt)
+    # Бастапқы және аз ғана ауытқуға ұшыраған күй
+    x_ref = np.copy(x0)
+    x_perturbed = x_ref + d0 * np.random.randn(n)
+    lyapunov_sum = 0
+    for t in t_vals:
+        # Екі траекторияны кішкентай интервалда шешу
+        sol_ref = solve_ivp(system, [0, dt], x_ref)
+        sol_perturbed = solve_ivp(system, [0, dt], x_perturbed)
+        x_ref = sol_ref.y[:, -1]
+        x_perturbed = sol_perturbed.y[:, -1]
+        # Арақашықтықты есептеу
+        delta = x_perturbed - x_ref
+        dist = np.linalg.norm(delta)
+        # Ляпунов экспонентінің қосындысын жинау
+        lyapunov_sum += np.log(dist / d0)
+        # Қайта нормализациялау
+        delta = d0 * delta / dist
+        x_perturbed = x_ref + delta
+    # Орташа мәнді қайтару
+    return lyapunov_sum / (T / dt)
+# Пайдалану:
+x0 = np.array([1, 0.5, 0.8, 0.9, 1.1])  # бастапқы шарт
+max_lyapunov = lyapunov_exponent(lotka_volterra, x0)
+print("Максималды Ляпунов экспоненті:", max_lyapunov)
+Интегралдың сақталуы:
+import numpy as np
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+# Антисимметриялы матрица A (параметрлер)
+A = np.array([
+    [0, 1, 0, 0, 0],
+    [-1, 0, 1, 0, 0],
+    [0, -1, 0, 1, 0],
+    [0, 0, -1, 0, 1],
+    [0, 0, 0, -1, 0]
+])
+# Лотка–Вольтерра жүйесін сипаттайтын функция
+def lotka_volterra(t, x):
+    return x * (A @ x)
+# Бастапқы шарттар
+x0 = np.array([1, 0.5, 0.8, 0.9, 1.1])
+t_span = (0, 50)  # уақыт аралығы
+t_eval = np.linspace(*t_span, 1000)  # уақыт бойынша нүктелер
+# Жүйені сандық түрде шешу
+sol = solve_ivp(lotka_volterra, t_span, x0, t_eval=t_eval)
+x = sol.y  # шешім (x1, x2, ..., x5)
+t = sol.t  # уақыт
+# Сақталатын шаманы анықтайтын функция
+def conserved_quantity(x):
+    return np.log(x[0]) + np.log(x[2]) + np.log(x[4]) - np.log(x[1]) - np.log(x[3])
+# Әр уақыт нүктесінде H(x) мәнін есептеу
+H_vals = [conserved_quantity(x[:, i]) for i in range(x.shape[1])]
+# H(x) шамасының графигін салу
+plt.figure(figsize=(8, 4))
+plt.plot(t, H_vals, label="H (сақталатын шама)")
+plt.xlabel("Уақыт")
+plt.ylabel("H(x)")
+plt.title("Сақталатын шаманың уақыт бойынша өзгерісі")
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.show()
+Фазалық портрет:
+import numpy as np
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+# Антисимметриялы матрица A
+A = np.array([
+    [0, 1, 0, 0, 0],
+    [-1, 0, 1, 0, 0],
+    [0, -1, 0, 1, 0],
+    [0, 0, -1, 0, 1],
+    [0, 0, 0, -1, 0]
+])
+# Лотка–Вольтерра жүйесінің анықтамасы
+def lotka_volterra(t, x):
+    return x * (A @ x)
+# Бастапқы шарт
+x0 = np.array([1, 0.5, 0.8, 0.9, 1.1])
+# Уақыт аралығы және дискретизация
+t_span = (0, 50)
+t_eval = np.linspace(*t_span, 1000)
+# Жүйені шешу
+sol = solve_ivp(lotka_volterra, t_span, x0, t_eval=t_eval)
+# Шешімді бөліп алу
+x = sol.y
+t = sol.t
+# График салу
+fig = plt.figure(figsize=(12, 6))
+# 3D фазалық портрет
+ax = fig.add_subplot(121, projection='3d')
+ax.plot(x[0], x[1], x[2])
+ax.set_xlabel("x1")
+ax.set_ylabel("x2")
+ax.set_zlabel("x3")
+ax.set_title("3D Phase Portrait: x1 vs x2 vs x3")
+# 2D проекция
+ax2 = fig.add_subplot(122)
+ax2.plot(x[0], x[1])
+ax2.set_xlabel("x1")
+ax2.set_ylabel("x2")
+ax2.set_title("2D Projection: x1 vs x2")
+plt.tight_layout()
+plt.show()
